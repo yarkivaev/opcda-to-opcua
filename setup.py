@@ -10,14 +10,9 @@ setup(
     description='OPC-DA to OPC-UA Bridge',
     author='Your Name',
     packages=find_packages(exclude=['tests', 'tests.*']),
-    install_requires=[
-        'opcua>=0.90.3',
-    ],
-    extras_require={
-        'dev': [
-            'coverage>=4.0',
-        ],
-    },
+    # Dependencies installed manually (old pip can't parse complex specifiers)
+    # See requirements.txt: opcua, OpenOPC, pywin32
+    install_requires=[],
     entry_points={
         'console_scripts': [
             'opcda-bridge=opcda_to_opcua.app.main:main',
