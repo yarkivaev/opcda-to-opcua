@@ -1,0 +1,2 @@
+# Development dependencies
+coverage>=4.0
