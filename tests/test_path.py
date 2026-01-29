@@ -1,239 +1,107 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for Path domain object.
+Tests for TagPath domain object.
 """
-import unittest
+from __future__ import print_function
+
+import logging
 import random
 import string
-import sys
-import os
+import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from opcda_to_mqtt.domain.path import TagPath
 
-from opcda_to_opcua.domain.path import NodePath, ParsedPath
+logging.disable(logging.CRITICAL)
 
 
-class NodePathReturnsSegmentsListTest(unittest.TestCase):
-    """NodePath returns segments as list."""
+class TestTagPath(unittest.TestCase):
+    """Tests for TagPath."""
 
-    def test(self):
-        segments = ["Seg%d" % random.randint(1, 100) for _ in range(3)]
-        path = NodePath(segments)
+    def test_tagpath_text_returns_original_path(self):
+        path = "".join(random.choice(string.ascii_letters) for _ in range(12))
         self.assertEqual(
-            path.segments(),
-            segments,
-            "NodePath must return segments as list"
+            TagPath(path).text(),
+            path,
+            "TagPath.text should return original path"
         )
 
-
-class NodePathFormatsTextWithSeparatorTest(unittest.TestCase):
-    """NodePath formats text with separator."""
-
-    def test(self):
-        segments = ["Objects", "Device", "Temperature"]
-        path = NodePath(segments, ".")
+    def test_tagpath_text_preserves_cyrillic_characters(self):
+        path = u"\u0422\u041c 5104_\u0418\u0427\u04221"
         self.assertEqual(
-            path.text(),
-            "Objects.Device.Temperature",
-            "NodePath must format text with separator"
+            TagPath(path).text(),
+            path,
+            "TagPath.text should preserve Cyrillic characters"
         )
 
-
-class NodePathFormatsTextWithCustomSeparatorTest(unittest.TestCase):
-    """NodePath formats text with custom separator."""
-
-    def test(self):
-        segments = ["A", "B", "C"]
-        path = NodePath(segments, "/")
+    def test_tagpath_topic_prepends_prefix(self):
+        path = "Device.Sensor"
+        prefix = "factory/line1"
         self.assertEqual(
-            path.text(),
-            "A/B/C",
-            "NodePath must format text with custom separator"
+            TagPath(path).topic(prefix),
+            "factory/line1/Device.Sensor",
+            "TagPath.topic should prepend prefix with slash"
         )
 
-
-class NodePathExtractsNameAsLastSegmentTest(unittest.TestCase):
-    """NodePath extracts name as last segment."""
-
-    def test(self):
-        name = "Tag%d" % random.randint(1, 1000)
-        segments = ["Parent", name]
-        path = NodePath(segments)
+    def test_tagpath_topic_with_empty_prefix(self):
+        path = "COM1.Tag"
         self.assertEqual(
-            path.name(),
-            name,
-            "NodePath must extract name as last segment"
+            TagPath(path).topic(""),
+            "/COM1.Tag",
+            "TagPath.topic with empty prefix should start with slash"
         )
 
+    def test_tagpath_raises_on_empty_path(self):
+        with self.assertRaises(ValueError):
+            TagPath("")
 
-class NodePathReturnsEmptyNameForEmptySegmentsTest(unittest.TestCase):
-    """NodePath returns empty name for empty segments."""
-
-    def test(self):
-        path = NodePath([])
+    def test_tagpath_equals_another_with_same_path(self):
+        path = "".join(random.choice(string.ascii_letters) for _ in range(10))
         self.assertEqual(
-            path.name(),
-            "",
-            "NodePath must return empty name for empty segments"
+            TagPath(path),
+            TagPath(path),
+            "TagPaths with same path should be equal"
         )
 
-
-class NodePathSegmentsAreImmutableTest(unittest.TestCase):
-    """NodePath segments are immutable."""
-
-    def test(self):
-        segments = ["A", "B", "C"]
-        path = NodePath(segments)
-        returned = path.segments()
-        returned.append("D")
-        self.assertEqual(
-            len(path.segments()),
-            3,
-            "NodePath segments must be immutable"
-        )
-
-
-class NodePathHandlesUnicodeSegmentsTest(unittest.TestCase):
-    """NodePath handles unicode segments."""
-
-    def test(self):
-        segments = [u"\u041e\u0431\u044a\u0435\u043a\u0442\u044b", u"\u0422\u0435\u043c\u043f"]
-        path = NodePath(segments)
-        self.assertEqual(
-            path.segments(),
-            segments,
-            "NodePath must handle unicode segments"
-        )
-
-
-class NodePathParentReturnsSomeForNestedPathTest(unittest.TestCase):
-    """NodePath parent returns Some for nested path."""
-
-    def test(self):
-        path = NodePath(["A", "B", "C"])
-        parent = path.parent()
-        self.assertTrue(
-            parent.present(),
-            "NodePath parent must return Some for nested path"
-        )
-
-
-class NodePathParentReturnsCorrectPathTest(unittest.TestCase):
-    """NodePath parent returns correct path."""
-
-    def test(self):
-        path = NodePath(["A", "B", "C"])
-        parent = path.parent()
-        self.assertEqual(
-            parent.content().segments(),
-            ["A", "B"],
-            "NodePath parent must return correct path"
-        )
-
-
-class NodePathParentReturnsEmptyForSingleSegmentTest(unittest.TestCase):
-    """NodePath parent returns Empty for single segment."""
-
-    def test(self):
-        path = NodePath(["Root"])
-        parent = path.parent()
-        self.assertFalse(
-            parent.present(),
-            "NodePath parent must return Empty for single segment"
-        )
-
-
-class NodePathParentReturnsEmptyForEmptyPathTest(unittest.TestCase):
-    """NodePath parent returns Empty for empty path."""
-
-    def test(self):
-        path = NodePath([])
-        parent = path.parent()
-        self.assertFalse(
-            parent.present(),
-            "NodePath parent must return Empty for empty path"
-        )
-
-
-class NodePathEqualityTest(unittest.TestCase):
-    """NodePath equality compares segments."""
-
-    def test(self):
-        segments = ["A", "B", "C"]
-        path1 = NodePath(segments)
-        path2 = NodePath(segments)
-        self.assertEqual(
-            path1,
-            path2,
-            "NodePaths with same segments must be equal"
-        )
-
-
-class NodePathInequalityTest(unittest.TestCase):
-    """NodePath inequality for different segments."""
-
-    def test(self):
-        path1 = NodePath(["A", "B"])
-        path2 = NodePath(["A", "C"])
+    def test_tagpath_not_equals_different_path(self):
         self.assertNotEqual(
-            path1,
-            path2,
-            "NodePaths with different segments must not be equal"
+            TagPath("path.one"),
+            TagPath("path.two"),
+            "TagPaths with different paths should not be equal"
         )
 
-
-class NodePathHashConsistencyTest(unittest.TestCase):
-    """NodePath hash is consistent with equality."""
-
-    def test(self):
-        segments = ["X", "Y", "Z"]
-        path1 = NodePath(segments)
-        path2 = NodePath(segments)
+    def test_tagpath_hash_is_consistent(self):
+        path = "".join(random.choice(string.ascii_letters) for _ in range(8))
+        tag = TagPath(path)
         self.assertEqual(
-            hash(path1),
-            hash(path2),
-            "Equal NodePaths must have equal hashes"
+            hash(tag),
+            hash(TagPath(path)),
+            "TagPath hash should be consistent"
         )
 
-
-class ParsedPathParsesTextTest(unittest.TestCase):
-    """ParsedPath parses text into NodePath."""
-
-    def test(self):
-        text = "Simulation.Random.Int%d" % random.randint(1, 100)
-        parsed = ParsedPath(text)
-        path = parsed.path()
+    def test_tagpath_can_be_used_in_set(self):
+        path = "COM1.Device.Tag"
+        tags = {TagPath(path), TagPath(path)}
         self.assertEqual(
-            path.text(),
-            text,
-            "ParsedPath must parse text into NodePath"
+            len(tags),
+            1,
+            "Duplicate TagPaths should be deduplicated in set"
         )
 
-
-class ParsedPathParsesWithCustomSeparatorTest(unittest.TestCase):
-    """ParsedPath parses with custom separator."""
-
-    def test(self):
-        parsed = ParsedPath("A/B/C", "/")
-        path = parsed.path()
+    def test_tagpath_can_be_used_as_dict_key(self):
+        path = "".join(random.choice(string.ascii_letters) for _ in range(10))
+        mapping = {TagPath(path): 42}
         self.assertEqual(
-            path.segments(),
-            ["A", "B", "C"],
-            "ParsedPath must parse with custom separator"
+            mapping[TagPath(path)],
+            42,
+            "TagPath should work as dict key"
         )
 
-
-class ParsedPathHandlesUnicodeTextTest(unittest.TestCase):
-    """ParsedPath handles unicode text."""
-
-    def test(self):
-        text = u"\u041e\u0431\u044a\u0435\u043a\u0442.\u0422\u0435\u0433"
-        parsed = ParsedPath(text)
-        path = parsed.path()
-        self.assertEqual(
-            path.text(),
-            text,
-            "ParsedPath must handle unicode text"
+    def test_tagpath_repr_shows_path(self):
+        path = "Device.Sensor.Temp"
+        self.assertIn(
+            path,
+            repr(TagPath(path)),
+            "TagPath repr should show path"
         )
 
 

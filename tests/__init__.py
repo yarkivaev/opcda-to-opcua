@@ -1,2 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for opcda_to_opcua library."""
+"""
+Test suite for OPC-DA to MQTT Publisher Library.
+"""
+from __future__ import print_function

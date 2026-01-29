@@ -31,3 +31,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Configuration (contains secrets)
+config.json

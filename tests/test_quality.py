@@ -1,196 +1,101 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for Quality domain object.
+Tests for OpcQuality domain object.
 """
-import unittest
+from __future__ import print_function
+
+import logging
 import random
-import sys
-import os
+import string
+import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from opcda_to_mqtt.domain.quality import OpcQuality
 
-from opcda_to_opcua.domain.quality import OpcQuality
+logging.disable(logging.CRITICAL)
 
 
-class OpcQualityReturnsCodeTest(unittest.TestCase):
-    """OpcQuality returns code."""
+class TestOpcQuality(unittest.TestCase):
+    """Tests for OpcQuality."""
 
-    def test(self):
-        code = random.randint(0, 255)
-        quality = OpcQuality(code)
+    def test_opcquality_text_returns_lowercase(self):
         self.assertEqual(
-            quality.code(),
-            code,
-            "OpcQuality must return code"
+            OpcQuality("Good").text(),
+            "good",
+            "OpcQuality.text should return lowercase"
         )
 
-
-class OpcQualityGoodForHighCodeTest(unittest.TestCase):
-    """OpcQuality reports good for high code."""
-
-    def test(self):
-        code = random.randint(192, 255)
-        quality = OpcQuality(code)
-        self.assertTrue(
-            quality.good(),
-            "OpcQuality must report good for code >= 192"
-        )
-
-
-class OpcQualityNotGoodForLowCodeTest(unittest.TestCase):
-    """OpcQuality reports not good for low code."""
-
-    def test(self):
-        code = random.randint(0, 191)
-        quality = OpcQuality(code)
-        self.assertFalse(
-            quality.good(),
-            "OpcQuality must report not good for code < 192"
-        )
-
-
-class OpcQualityBadForVeryLowCodeTest(unittest.TestCase):
-    """OpcQuality reports bad for very low code."""
-
-    def test(self):
-        code = random.randint(0, 63)
-        quality = OpcQuality(code)
-        self.assertTrue(
-            quality.bad(),
-            "OpcQuality must report bad for code < 64"
-        )
-
-
-class OpcQualityNotBadForHighCodeTest(unittest.TestCase):
-    """OpcQuality reports not bad for high code."""
-
-    def test(self):
-        code = random.randint(64, 255)
-        quality = OpcQuality(code)
-        self.assertFalse(
-            quality.bad(),
-            "OpcQuality must report not bad for code >= 64"
-        )
-
-
-class OpcQualityUncertainForMiddleCodeTest(unittest.TestCase):
-    """OpcQuality reports uncertain for middle code."""
-
-    def test(self):
-        code = random.randint(64, 191)
-        quality = OpcQuality(code)
-        self.assertTrue(
-            quality.uncertain(),
-            "OpcQuality must report uncertain for 64 <= code < 192"
-        )
-
-
-class OpcQualityNotUncertainForGoodCodeTest(unittest.TestCase):
-    """OpcQuality reports not uncertain for good code."""
-
-    def test(self):
-        code = random.randint(192, 255)
-        quality = OpcQuality(code)
-        self.assertFalse(
-            quality.uncertain(),
-            "OpcQuality must report not uncertain for code >= 192"
-        )
-
-
-class OpcQualityNotUncertainForBadCodeTest(unittest.TestCase):
-    """OpcQuality reports not uncertain for bad code."""
-
-    def test(self):
-        code = random.randint(0, 63)
-        quality = OpcQuality(code)
-        self.assertFalse(
-            quality.uncertain(),
-            "OpcQuality must report not uncertain for code < 64"
-        )
-
-
-class OpcQualityBoundaryGoodAt192Test(unittest.TestCase):
-    """OpcQuality boundary: 192 is good."""
-
-    def test(self):
-        quality = OpcQuality(192)
-        self.assertTrue(
-            quality.good(),
-            "OpcQuality 192 must be good"
-        )
-
-
-class OpcQualityBoundaryNotGoodAt191Test(unittest.TestCase):
-    """OpcQuality boundary: 191 is not good."""
-
-    def test(self):
-        quality = OpcQuality(191)
-        self.assertFalse(
-            quality.good(),
-            "OpcQuality 191 must not be good"
-        )
-
-
-class OpcQualityBoundaryBadAt63Test(unittest.TestCase):
-    """OpcQuality boundary: 63 is bad."""
-
-    def test(self):
-        quality = OpcQuality(63)
-        self.assertTrue(
-            quality.bad(),
-            "OpcQuality 63 must be bad"
-        )
-
-
-class OpcQualityBoundaryNotBadAt64Test(unittest.TestCase):
-    """OpcQuality boundary: 64 is not bad."""
-
-    def test(self):
-        quality = OpcQuality(64)
-        self.assertFalse(
-            quality.bad(),
-            "OpcQuality 64 must not be bad"
-        )
-
-
-class OpcQualityEqualityTest(unittest.TestCase):
-    """OpcQuality equality compares codes."""
-
-    def test(self):
-        code = random.randint(0, 255)
-        q1 = OpcQuality(code)
-        q2 = OpcQuality(code)
+    def test_opcquality_text_handles_mixed_case(self):
         self.assertEqual(
-            q1,
-            q2,
-            "OpcQualities with same code must be equal"
+            OpcQuality("GOOD").text(),
+            "good",
+            "OpcQuality.text should handle uppercase"
         )
 
+    def test_opcquality_text_handles_bad(self):
+        self.assertEqual(
+            OpcQuality("Bad").text(),
+            "bad",
+            "OpcQuality.text should handle Bad"
+        )
 
-class OpcQualityInequalityTest(unittest.TestCase):
-    """OpcQuality inequality for different codes."""
+    def test_opcquality_text_handles_uncertain(self):
+        self.assertEqual(
+            OpcQuality("Uncertain").text(),
+            "uncertain",
+            "OpcQuality.text should handle Uncertain"
+        )
 
-    def test(self):
-        q1 = OpcQuality(192)
-        q2 = OpcQuality(0)
+    def test_opcquality_is_good_returns_true_for_good(self):
+        self.assertTrue(
+            OpcQuality("Good").is_good(),
+            "OpcQuality.is_good should return True for Good"
+        )
+
+    def test_opcquality_is_good_returns_true_for_good_with_suffix(self):
+        self.assertTrue(
+            OpcQuality("GoodLocalOverride").is_good(),
+            "OpcQuality.is_good should return True for GoodLocalOverride"
+        )
+
+    def test_opcquality_is_good_returns_false_for_bad(self):
+        self.assertFalse(
+            OpcQuality("Bad").is_good(),
+            "OpcQuality.is_good should return False for Bad"
+        )
+
+    def test_opcquality_is_good_returns_false_for_uncertain(self):
+        self.assertFalse(
+            OpcQuality("Uncertain").is_good(),
+            "OpcQuality.is_good should return False for Uncertain"
+        )
+
+    def test_opcquality_equals_another_with_same_code(self):
+        self.assertEqual(
+            OpcQuality("Good"),
+            OpcQuality("Good"),
+            "OpcQualities with same code should be equal"
+        )
+
+    def test_opcquality_equals_ignores_case(self):
+        self.assertEqual(
+            OpcQuality("good"),
+            OpcQuality("GOOD"),
+            "OpcQuality equality should ignore case"
+        )
+
+    def test_opcquality_not_equals_different_code(self):
         self.assertNotEqual(
-            q1,
-            q2,
-            "OpcQualities with different codes must not be equal"
+            OpcQuality("Good"),
+            OpcQuality("Bad"),
+            "OpcQualities with different codes should not be equal"
         )
 
-
-class OpcQualityHashConsistencyTest(unittest.TestCase):
-    """OpcQuality hash is consistent with equality."""
-
-    def test(self):
-        code = random.randint(0, 255)
-        q1 = OpcQuality(code)
-        q2 = OpcQuality(code)
-        self.assertEqual(
-            hash(q1),
-            hash(q2),
-            "Equal OpcQualities must have equal hashes"
+    def test_opcquality_repr_shows_code(self):
+        code = "Good"
+        self.assertIn(
+            code,
+            repr(OpcQuality(code)),
+            "OpcQuality repr should show code"
         )
 
 

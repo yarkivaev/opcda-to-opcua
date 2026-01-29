@@ -1,289 +1,251 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for Either monad.
-
-Tests follow Elegant Objects testing principles:
-- One assertion per test
-- Test names are full English sentences
-- Random inputs where applicable
-- No setUp/tearDown idioms
-- No shared constants between tests
+Tests for Either ADT.
 """
-import unittest
+from __future__ import print_function
+
+import logging
 import random
-import sys
-import os
+import string
+import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from opcda_to_mqtt.result.either import Either, Right, Left, Problem
 
-from opcda_to_opcua.result.either import Either, Right, Left, Problem
+logging.disable(logging.CRITICAL)
 
 
-class RightReportsSuccessfulAsTrueTest(unittest.TestCase):
-    """Right reports successful as true."""
+class TestRight(unittest.TestCase):
+    """Tests for Right success case."""
 
-    def test(self):
-        content = random.randint(-1000, 1000)
-        result = Right(content)
-        self.assertTrue(
-            result.successful(),
-            "Right must report successful as true"
+    def test_right_fold_applies_right_function_to_content(self):
+        content = random.randint(1, 1000)
+        result = Right(content).fold(
+            lambda e: "error",
+            lambda v: v * 2
         )
-
-
-class RightReturnsWrappedContentTest(unittest.TestCase):
-    """Right returns wrapped content."""
-
-    def test(self):
-        content = u"\u0422\u0435\u043c\u043f\u0435\u0440\u0430\u0442\u0443\u0440\u0430"
-        result = Right(content)
         self.assertEqual(
-            result.value(),
-            content,
-            "Right must return wrapped content"
-        )
-
-
-class RightReturnsIntegerContentTest(unittest.TestCase):
-    """Right returns integer content unchanged."""
-
-    def test(self):
-        content = random.randint(-999999, 999999)
-        result = Right(content)
-        self.assertEqual(
-            result.value(),
-            content,
-            "Right must return integer content unchanged"
-        )
-
-
-class RightReturnsFloatContentTest(unittest.TestCase):
-    """Right returns float content unchanged."""
-
-    def test(self):
-        content = random.uniform(-1000.0, 1000.0)
-        result = Right(content)
-        self.assertAlmostEqual(
-            result.value(),
-            content,
-            places=10,
-            msg="Right must return float content unchanged"
-        )
-
-
-class RightRaisesOnProblemExtractionTest(unittest.TestCase):
-    """Right raises RuntimeError on problem extraction."""
-
-    def test(self):
-        result = Right(random.randint(0, 100))
-        with self.assertRaises(RuntimeError):
-            result.problem()
-
-
-class RightMapsContentWithFunctionTest(unittest.TestCase):
-    """Right maps content with function."""
-
-    def test(self):
-        content = random.randint(1, 100)
-        result = Right(content)
-        doubled = result.map(lambda x: x * 2)
-        self.assertEqual(
-            doubled.value(),
+            result,
             content * 2,
-            "Right must map content with function"
+            "Right.fold should apply right function"
         )
 
-
-class RightMapsToNewRightInstanceTest(unittest.TestCase):
-    """Right map returns new Right instance."""
-
-    def test(self):
-        original = Right(random.randint(1, 100))
-        mapped = original.map(lambda x: x)
-        self.assertIsNot(
-            original,
-            mapped,
-            "Right map must return new instance"
-        )
-
-
-class RightFlatmapsToNewEitherTest(unittest.TestCase):
-    """Right flatmaps to new Either."""
-
-    def test(self):
-        result = Right(random.randint(10, 100))
-        chained = result.flatmap(lambda x: Right(x + 5) if x > 5 else Left(Problem("too small", "")))
+    def test_right_is_right_returns_true(self):
+        content = "".join(random.choice(string.ascii_letters) for _ in range(8))
         self.assertTrue(
-            chained.successful(),
-            "Right must flatmap to new Either"
+            Right(content).is_right(),
+            "Right.is_right should return True"
         )
 
-
-class RightFlatmapsToLeftOnConditionTest(unittest.TestCase):
-    """Right flatmaps to Left when condition fails."""
-
-    def test(self):
-        result = Right(random.randint(-10, 0))
-        chained = result.flatmap(lambda x: Right(x) if x > 50 else Left(Problem("too small", "")))
-        self.assertFalse(
-            chained.successful(),
-            "Right must flatmap to Left when condition fails"
-        )
-
-
-class LeftReportsSuccessfulAsFalseTest(unittest.TestCase):
-    """Left reports successful as false."""
-
-    def test(self):
-        error = Problem("Connection timeout after %d ms" % random.randint(1000, 5000), "")
-        result = Left(error)
-        self.assertFalse(
-            result.successful(),
-            "Left must report successful as false"
-        )
-
-
-class LeftReturnsWrappedErrorTest(unittest.TestCase):
-    """Left returns wrapped error."""
-
-    def test(self):
-        message = u"\u041e\u0448\u0438\u0431\u043a\u0430 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f"
-        error = Problem(message, "")
-        result = Left(error)
+    def test_right_map_transforms_content(self):
+        content = random.randint(1, 100)
+        result = Right(content).map(lambda x: x + 10)
         self.assertEqual(
-            result.problem().message(),
-            message,
-            "Left must return wrapped error"
+            result.fold(lambda e: 0, lambda v: v),
+            content + 10,
+            "Right.map should transform content"
+        )
+
+    def test_right_flatmap_returns_function_result(self):
+        content = random.randint(1, 50)
+        result = Right(content).flatmap(lambda x: Right(x * 3))
+        self.assertEqual(
+            result.fold(lambda e: 0, lambda v: v),
+            content * 3,
+            "Right.flatmap should return function result"
+        )
+
+    def test_right_content_returns_wrapped_value(self):
+        content = "".join(random.choice(string.ascii_letters) for _ in range(10))
+        self.assertEqual(
+            Right(content).content(),
+            content,
+            "Right.content should return wrapped value"
+        )
+
+    def test_right_equals_another_right_with_same_content(self):
+        content = random.randint(1, 1000)
+        self.assertEqual(
+            Right(content),
+            Right(content),
+            "Rights with same content should be equal"
+        )
+
+    def test_right_not_equals_right_with_different_content(self):
+        self.assertNotEqual(
+            Right(random.randint(1, 100)),
+            Right(random.randint(200, 300)),
+            "Rights with different content should not be equal"
+        )
+
+    def test_right_not_equals_left(self):
+        content = random.randint(1, 100)
+        self.assertNotEqual(
+            Right(content),
+            Left(Problem("error", {})),
+            "Right should not equal Left"
+        )
+
+    def test_right_repr_shows_content(self):
+        content = random.randint(1, 100)
+        self.assertIn(
+            str(content),
+            repr(Right(content)),
+            "Right repr should show content"
         )
 
 
-class LeftRaisesOnValueExtractionTest(unittest.TestCase):
-    """Left raises RuntimeError on value extraction."""
+class TestLeft(unittest.TestCase):
+    """Tests for Left failure case."""
 
-    def test(self):
-        result = Left(Problem("error", ""))
-        with self.assertRaises(RuntimeError):
-            result.value()
-
-
-class LeftMapReturnsSelfTest(unittest.TestCase):
-    """Left map returns self unchanged."""
-
-    def test(self):
-        error = Problem("original error", "")
-        result = Left(error)
-        mapped = result.map(lambda x: x * 2)
-        self.assertIs(
-            mapped,
+    def test_left_fold_applies_left_function_to_error(self):
+        message = "".join(random.choice(string.ascii_letters) for _ in range(8))
+        error = Problem(message, {})
+        result = Left(error).fold(
+            lambda e: e.message(),
+            lambda v: "success"
+        )
+        self.assertEqual(
             result,
-            "Left map must return self unchanged"
+            message,
+            "Left.fold should apply left function"
         )
 
+    def test_left_is_right_returns_false(self):
+        error = Problem("error", {})
+        self.assertFalse(
+            Left(error).is_right(),
+            "Left.is_right should return False"
+        )
 
-class LeftFlatmapReturnsSelfTest(unittest.TestCase):
-    """Left flatmap returns self unchanged."""
-
-    def test(self):
-        error = Problem("original error", "")
-        result = Left(error)
-        chained = result.flatmap(lambda x: Right(x * 2))
+    def test_left_map_passes_through_unchanged(self):
+        error = Problem("error", {"key": "value"})
+        left = Left(error)
+        result = left.map(lambda x: x * 2)
         self.assertIs(
-            chained,
             result,
-            "Left flatmap must return self unchanged"
+            left,
+            "Left.map should pass through unchanged"
+        )
+
+    def test_left_flatmap_passes_through_unchanged(self):
+        error = Problem("error", {})
+        left = Left(error)
+        result = left.flatmap(lambda x: Right(x * 2))
+        self.assertIs(
+            result,
+            left,
+            "Left.flatmap should pass through unchanged"
+        )
+
+    def test_left_error_returns_wrapped_problem(self):
+        error = Problem("test", {"a": "b"})
+        self.assertEqual(
+            Left(error).error(),
+            error,
+            "Left.error should return wrapped Problem"
+        )
+
+    def test_left_equals_another_left_with_same_error(self):
+        error = Problem("same", {"k": "v"})
+        self.assertEqual(
+            Left(error),
+            Left(error),
+            "Lefts with same error should be equal"
+        )
+
+    def test_left_not_equals_left_with_different_error(self):
+        self.assertNotEqual(
+            Left(Problem("one", {})),
+            Left(Problem("two", {})),
+            "Lefts with different errors should not be equal"
+        )
+
+    def test_left_repr_shows_error(self):
+        error = Problem("test-message", {})
+        self.assertIn(
+            "test-message",
+            repr(Left(error)),
+            "Left repr should show error"
         )
 
 
-class LeftPreservesErrorThroughMapTest(unittest.TestCase):
-    """Left preserves error through map operation."""
+class TestProblem(unittest.TestCase):
+    """Tests for Problem error description."""
 
-    def test(self):
-        message = "error_%d" % random.randint(1000, 9999)
-        result = Left(Problem(message, ""))
-        mapped = result.map(lambda x: x * 2)
+    def test_problem_text_returns_message_when_no_context(self):
+        message = "".join(random.choice(string.ascii_letters) for _ in range(12))
         self.assertEqual(
-            mapped.problem().message(),
+            Problem(message, {}).text(),
             message,
-            "Left must preserve error through map"
+            "Problem.text should return message alone when no context"
         )
 
+    def test_problem_text_includes_context(self):
+        message = "failed"
+        context = {"host": "localhost", "port": str(random.randint(1000, 9999))}
+        text = Problem(message, context).text()
+        self.assertIn(
+            "host=localhost",
+            text,
+            "Problem.text should include context"
+        )
 
-class ProblemReturnsMessageTest(unittest.TestCase):
-    """Problem returns message."""
-
-    def test(self):
-        message = "Connection failed %d" % random.randint(1, 100)
-        problem = Problem(message, "")
+    def test_problem_message_returns_original_message(self):
+        message = "".join(random.choice(string.ascii_letters) for _ in range(10))
         self.assertEqual(
-            problem.message(),
+            Problem(message, {"a": "b"}).message(),
             message,
-            "Problem must return message"
+            "Problem.message should return original message"
         )
 
-
-class ProblemReturnsContextTest(unittest.TestCase):
-    """Problem returns context."""
-
-    def test(self):
-        context = "host=192.168.%d.%d" % (random.randint(0, 255), random.randint(0, 255))
-        problem = Problem("error", context)
+    def test_problem_context_returns_copy_of_context(self):
+        context = {"key": "value"}
+        problem = Problem("msg", context)
+        returned = problem.context()
         self.assertEqual(
-            problem.context(),
+            returned,
             context,
-            "Problem must return context"
+            "Problem.context should return context"
         )
 
-
-class ProblemFormatsAsStringWithContextTest(unittest.TestCase):
-    """Problem formats as string with context."""
-
-    def test(self):
-        message = "Failed"
-        context = "reason_%d" % random.randint(1, 100)
-        problem = Problem(message, context)
-        self.assertEqual(
-            str(problem),
-            "%s: %s" % (message, context),
-            "Problem must format as string with context"
-        )
-
-
-class ProblemFormatsAsStringWithoutContextTest(unittest.TestCase):
-    """Problem formats as string without context."""
-
-    def test(self):
-        message = "Failed_%d" % random.randint(1, 100)
-        problem = Problem(message, "")
-        self.assertEqual(
-            str(problem),
-            message,
-            "Problem must format as string without context"
-        )
-
-
-class ProblemHandlesUnicodeMessageTest(unittest.TestCase):
-    """Problem handles unicode message."""
-
-    def test(self):
-        message = u"\u041e\u0448\u0438\u0431\u043a\u0430"
-        problem = Problem(message, "")
-        self.assertEqual(
-            problem.message(),
-            message,
-            "Problem must handle unicode message"
-        )
-
-
-class ProblemHandlesUnicodeContextTest(unittest.TestCase):
-    """Problem handles unicode context."""
-
-    def test(self):
-        context = u"\u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442"
-        problem = Problem("error", context)
-        self.assertEqual(
+    def test_problem_context_is_copy_not_original(self):
+        context = {"key": "value"}
+        problem = Problem("msg", context)
+        returned = problem.context()
+        returned["new"] = "added"
+        self.assertNotIn(
+            "new",
             problem.context(),
-            context,
-            "Problem must handle unicode context"
+            "Problem.context should return a copy"
+        )
+
+    def test_problem_equals_another_with_same_values(self):
+        self.assertEqual(
+            Problem("msg", {"a": "b"}),
+            Problem("msg", {"a": "b"}),
+            "Problems with same values should be equal"
+        )
+
+    def test_problem_not_equals_different_message(self):
+        self.assertNotEqual(
+            Problem("one", {}),
+            Problem("two", {}),
+            "Problems with different messages should not be equal"
+        )
+
+    def test_problem_not_equals_different_context(self):
+        self.assertNotEqual(
+            Problem("msg", {"a": "1"}),
+            Problem("msg", {"a": "2"}),
+            "Problems with different contexts should not be equal"
+        )
+
+    def test_problem_repr_shows_message_and_context(self):
+        rep = repr(Problem("test", {"k": "v"}))
+        self.assertIn(
+            "test",
+            rep,
+            "Problem repr should show message"
         )
 
 

@@ -1,148 +1,99 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for Value domain object.
+Tests for TagValue domain object.
 """
-import unittest
+from __future__ import print_function
+
+import logging
 import random
-import sys
-import os
+import string
+import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from opcda_to_mqtt.domain.value import TagValue
 
-from opcda_to_opcua.domain.value import TagValue
-from opcda_to_opcua.domain.variant import IntVariant, FloatVariant, StringVariant
+logging.disable(logging.CRITICAL)
 
 
-class TagValueReturnsContentTest(unittest.TestCase):
-    """TagValue returns content."""
+class TestTagValue(unittest.TestCase):
+    """Tests for TagValue."""
 
-    def test(self):
+    def test_tagvalue_content_returns_integer(self):
         content = random.randint(-1000, 1000)
-        value = TagValue(content, IntVariant())
         self.assertEqual(
-            value.content(),
+            TagValue(content).content(),
             content,
-            "TagValue must return content"
+            "TagValue.content should return integer"
         )
 
-
-class TagValueReturnsVariantTest(unittest.TestCase):
-    """TagValue returns variant."""
-
-    def test(self):
-        variant = IntVariant()
-        value = TagValue(42, variant)
+    def test_tagvalue_content_returns_float(self):
+        content = random.uniform(-100.0, 100.0)
         self.assertEqual(
-            value.variant().code(),
-            variant.code(),
-            "TagValue must return variant"
-        )
-
-
-class TagValueHandlesFloatContentTest(unittest.TestCase):
-    """TagValue handles float content."""
-
-    def test(self):
-        content = random.uniform(-1000.0, 1000.0)
-        value = TagValue(content, FloatVariant())
-        self.assertAlmostEqual(
-            value.content(),
+            TagValue(content).content(),
             content,
-            places=10,
-            msg="TagValue must handle float content"
+            "TagValue.content should return float"
         )
 
-
-class TagValueHandlesStringContentTest(unittest.TestCase):
-    """TagValue handles string content."""
-
-    def test(self):
-        content = u"\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435_%d" % random.randint(1, 100)
-        value = TagValue(content, StringVariant())
+    def test_tagvalue_content_returns_string(self):
+        content = "".join(random.choice(string.ascii_letters) for _ in range(10))
         self.assertEqual(
-            value.content(),
+            TagValue(content).content(),
             content,
-            "TagValue must handle string content"
+            "TagValue.content should return string"
         )
 
-
-class TagValueEqualityTest(unittest.TestCase):
-    """TagValue equality compares content and variant."""
-
-    def test(self):
-        content = random.randint(1, 100)
-        value1 = TagValue(content, IntVariant())
-        value2 = TagValue(content, IntVariant())
-        self.assertEqual(
-            value1,
-            value2,
-            "TagValues with same content and variant must be equal"
-        )
-
-
-class TagValueInequalityByContentTest(unittest.TestCase):
-    """TagValue inequality for different content."""
-
-    def test(self):
-        value1 = TagValue(42, IntVariant())
-        value2 = TagValue(43, IntVariant())
-        self.assertNotEqual(
-            value1,
-            value2,
-            "TagValues with different content must not be equal"
-        )
-
-
-class TagValueInequalityByVariantTest(unittest.TestCase):
-    """TagValue inequality for different variant."""
-
-    def test(self):
-        value1 = TagValue(42, IntVariant())
-        value2 = TagValue(42, FloatVariant())
-        self.assertNotEqual(
-            value1,
-            value2,
-            "TagValues with different variant must not be equal"
-        )
-
-
-class TagValueHashConsistencyTest(unittest.TestCase):
-    """TagValue hash is consistent with equality."""
-
-    def test(self):
-        content = random.randint(1, 100)
-        value1 = TagValue(content, IntVariant())
-        value2 = TagValue(content, IntVariant())
-        self.assertEqual(
-            hash(value1),
-            hash(value2),
-            "Equal TagValues must have equal hashes"
-        )
-
-
-class TagValueHandlesListContentTest(unittest.TestCase):
-    """TagValue handles list content."""
-
-    def test(self):
-        content = [random.randint(1, 10) for _ in range(5)]
-        value = TagValue(content, IntVariant())
-        self.assertEqual(
-            value.content(),
-            content,
-            "TagValue must handle list content"
-        )
-
-
-class TagValueHandlesBoolContentTest(unittest.TestCase):
-    """TagValue handles bool content."""
-
-    def test(self):
+    def test_tagvalue_content_returns_boolean(self):
         content = random.choice([True, False])
-        value = TagValue(content, IntVariant())
         self.assertEqual(
-            value.content(),
+            TagValue(content).content(),
             content,
-            "TagValue must handle bool content"
+            "TagValue.content should return boolean"
+        )
+
+    def test_tagvalue_content_preserves_cyrillic(self):
+        content = u"\u041f\u0440\u0438\u0432\u0435\u0442"
+        self.assertEqual(
+            TagValue(content).content(),
+            content,
+            "TagValue.content should preserve Cyrillic"
+        )
+
+    def test_tagvalue_json_returns_integer(self):
+        content = random.randint(1, 100)
+        self.assertEqual(
+            TagValue(content).json(),
+            content,
+            "TagValue.json should return integer"
+        )
+
+    def test_tagvalue_json_returns_float(self):
+        content = random.uniform(1.0, 100.0)
+        self.assertEqual(
+            TagValue(content).json(),
+            content,
+            "TagValue.json should return float"
+        )
+
+    def test_tagvalue_equals_another_with_same_content(self):
+        content = random.randint(1, 1000)
+        self.assertEqual(
+            TagValue(content),
+            TagValue(content),
+            "TagValues with same content should be equal"
+        )
+
+    def test_tagvalue_not_equals_different_content(self):
+        self.assertNotEqual(
+            TagValue(random.randint(1, 100)),
+            TagValue(random.randint(200, 300)),
+            "TagValues with different content should not be equal"
+        )
+
+    def test_tagvalue_repr_shows_content(self):
+        content = random.randint(1, 100)
+        self.assertIn(
+            str(content),
+            repr(TagValue(content)),
+            "TagValue repr should show content"
         )
 
 

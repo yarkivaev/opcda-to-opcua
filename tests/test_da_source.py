@@ -1,228 +1,101 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for FakeDaSource.
+Tests for DaSource and FakeDaSource.
 """
-import unittest
+from __future__ import print_function
+
+import logging
 import random
-import sys
-import os
+import string
+import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from opcda_to_mqtt.da.fake import FakeDaSource
+from opcda_to_mqtt.domain.path import TagPath
 
-from opcda_to_opcua.da.fake import FakeDaSource
-from opcda_to_opcua.domain.path import NodePath
-from opcda_to_opcua.domain.value import TagValue
-from opcda_to_opcua.domain.variant import IntVariant, FloatVariant
+logging.disable(logging.CRITICAL)
 
 
-class FakeDaSourceConnectsSuccessfullyTest(unittest.TestCase):
-    """FakeDaSource connects successfully."""
+class TestFakeDaSource(unittest.TestCase):
+    """Tests for FakeDaSource."""
 
-    def test(self):
-        source = FakeDaSource([], {})
-        result = source.connect()
+    def test_fake_source_discover_returns_right(self):
+        tags = [TagPath("Tag1"), TagPath("Tag2")]
+        source = FakeDaSource(tags)
+        result = source.discover("prefix")
         self.assertTrue(
-            result.successful(),
-            "FakeDaSource must connect successfully"
+            result.is_right(),
+            "FakeDaSource.discover should return Right"
         )
 
-
-class FakeDaSourceDisconnectsSuccessfullyTest(unittest.TestCase):
-    """FakeDaSource disconnects successfully."""
-
-    def test(self):
-        source = FakeDaSource([], {})
-        source.connect()
-        result = source.disconnect()
-        self.assertTrue(
-            result.successful(),
-            "FakeDaSource must disconnect successfully"
-        )
-
-
-class FakeDaSourceFailsDiscoverWhenNotConnectedTest(unittest.TestCase):
-    """FakeDaSource fails discover when not connected."""
-
-    def test(self):
-        source = FakeDaSource([], {})
-        result = source.discover()
-        self.assertFalse(
-            result.successful(),
-            "FakeDaSource must fail discover when not connected"
-        )
-
-
-class FakeDaSourceDiscoversNodesTest(unittest.TestCase):
-    """FakeDaSource discovers nodes."""
-
-    def test(self):
-        paths = [
-            NodePath(["Sim", "Int%d" % random.randint(1, 100)]),
-            NodePath(["Sim", "Real%d" % random.randint(1, 100)])
-        ]
-        source = FakeDaSource(paths, {})
-        source.connect()
-        result = source.discover()
+    def test_fake_source_discover_returns_configured_tags(self):
+        path = "".join(random.choice(string.ascii_letters) for _ in range(10))
+        tags = [TagPath(path)]
+        source = FakeDaSource(tags)
+        result = source.discover("")
+        discovered = result.fold(lambda e: [], lambda t: t)
         self.assertEqual(
-            len(result.value()),
+            len(discovered),
+            1,
+            "FakeDaSource should return configured tags"
+        )
+
+    def test_fake_source_discover_ignores_prefix(self):
+        tags = [TagPath("A"), TagPath("B")]
+        source = FakeDaSource(tags)
+        prefix = "".join(random.choice(string.ascii_letters) for _ in range(5))
+        result = source.discover(prefix)
+        discovered = result.fold(lambda e: [], lambda t: t)
+        self.assertEqual(
+            len(discovered),
             2,
-            "FakeDaSource must discover all nodes"
+            "FakeDaSource should ignore prefix"
         )
 
-
-class FakeDaSourceFetchesValueTest(unittest.TestCase):
-    """FakeDaSource fetches value."""
-
-    def test(self):
-        path = NodePath(["Sim", "Tag%d" % random.randint(1, 100)])
-        content = random.randint(-1000, 1000)
-        values = {path.text(): TagValue(content, IntVariant())}
-        source = FakeDaSource([path], values)
-        source.connect()
-        result = source.fetch(path)
+    def test_fake_source_tags_returns_copy(self):
+        tags = [TagPath("Original")]
+        source = FakeDaSource(tags)
+        returned = source.tags()
+        returned.append(TagPath("Added"))
         self.assertEqual(
-            result.value().value().content(),
-            content,
-            "FakeDaSource must fetch value"
+            len(source.tags()),
+            1,
+            "FakeDaSource.tags should return a copy"
         )
 
-
-class FakeDaSourceFetchReturnsGoodQualityTest(unittest.TestCase):
-    """FakeDaSource fetch returns good quality."""
-
-    def test(self):
-        path = NodePath(["Sim", "Tag"])
-        values = {path.text(): TagValue(42, IntVariant())}
-        source = FakeDaSource([path], values)
-        source.connect()
-        result = source.fetch(path)
-        self.assertTrue(
-            result.value().quality().good(),
-            "FakeDaSource fetch must return good quality"
-        )
-
-
-class FakeDaSourceFailsFetchWhenNotConnectedTest(unittest.TestCase):
-    """FakeDaSource fails fetch when not connected."""
-
-    def test(self):
-        path = NodePath(["Sim", "Tag"])
-        values = {path.text(): TagValue(42, IntVariant())}
-        source = FakeDaSource([path], values)
-        result = source.fetch(path)
-        self.assertFalse(
-            result.successful(),
-            "FakeDaSource must fail fetch when not connected"
-        )
-
-
-class FakeDaSourceFailsFetchForUnknownPathTest(unittest.TestCase):
-    """FakeDaSource fails fetch for unknown path."""
-
-    def test(self):
-        path = NodePath(["Unknown", "Tag"])
-        source = FakeDaSource([], {})
-        source.connect()
-        result = source.fetch(path)
-        self.assertFalse(
-            result.successful(),
-            "FakeDaSource must fail fetch for unknown path"
-        )
-
-
-class FakeDaSourceSendsValueTest(unittest.TestCase):
-    """FakeDaSource sends value."""
-
-    def test(self):
-        path = NodePath(["Sim", "Setpoint"])
-        value = TagValue(random.randint(1, 100), IntVariant())
-        source = FakeDaSource([path], {path.text(): TagValue(0, IntVariant())})
-        source.connect()
-        result = source.send(path, value)
-        self.assertTrue(
-            result.successful(),
-            "FakeDaSource must send value successfully"
-        )
-
-
-class FakeDaSourceRecordsWrittenValueTest(unittest.TestCase):
-    """FakeDaSource records written value."""
-
-    def test(self):
-        path = NodePath(["Sim", "Setpoint"])
-        content = random.randint(1, 100)
-        value = TagValue(content, IntVariant())
-        source = FakeDaSource([path], {path.text(): TagValue(0, IntVariant())})
-        source.connect()
-        source.send(path, value)
-        written = source.written(path)
+    def test_fake_source_discover_returns_independent_list(self):
+        tags = [TagPath("Tag")]
+        source = FakeDaSource(tags)
+        result1 = source.discover("")
+        list1 = result1.fold(lambda e: [], lambda t: t)
+        list1.append(TagPath("New"))
+        result2 = source.discover("")
+        list2 = result2.fold(lambda e: [], lambda t: t)
         self.assertEqual(
-            written.content().content(),
-            content,
-            "FakeDaSource must record written value"
+            len(list2),
+            1,
+            "Each discover call should return independent list"
         )
 
-
-class FakeDaSourceWrittenReturnsEmptyForUnwrittenTest(unittest.TestCase):
-    """FakeDaSource written returns Empty for unwritten path."""
-
-    def test(self):
-        path = NodePath(["Sim", "Unwritten"])
-        source = FakeDaSource([], {})
-        source.connect()
-        written = source.written(path)
-        self.assertFalse(
-            written.present(),
-            "FakeDaSource written must return Empty for unwritten path"
-        )
-
-
-class FakeDaSourceFailsSendWhenNotConnectedTest(unittest.TestCase):
-    """FakeDaSource fails send when not connected."""
-
-    def test(self):
-        path = NodePath(["Sim", "Setpoint"])
-        value = TagValue(42, IntVariant())
-        source = FakeDaSource([path], {})
-        result = source.send(path, value)
-        self.assertFalse(
-            result.successful(),
-            "FakeDaSource must fail send when not connected"
-        )
-
-
-class FakeDaSourceUpdatesValueAfterWriteTest(unittest.TestCase):
-    """FakeDaSource updates value after write."""
-
-    def test(self):
-        path = NodePath(["Sim", "Tag"])
-        original = TagValue(0, IntVariant())
-        updated = TagValue(random.randint(1, 100), IntVariant())
-        source = FakeDaSource([path], {path.text(): original})
-        source.connect()
-        source.send(path, updated)
-        result = source.fetch(path)
+    def test_fake_source_handles_empty_tags(self):
+        source = FakeDaSource([])
+        result = source.discover("any")
+        discovered = result.fold(lambda e: ["error"], lambda t: t)
         self.assertEqual(
-            result.value().value().content(),
-            updated.content(),
-            "FakeDaSource must update value after write"
+            len(discovered),
+            0,
+            "FakeDaSource should handle empty tags"
         )
 
-
-class FakeDaSourceInjectsValueTest(unittest.TestCase):
-    """FakeDaSource injects value."""
-
-    def test(self):
-        path = NodePath(["Sim", "Tag"])
-        content = random.randint(1, 100)
-        source = FakeDaSource([path], {})
-        source.connect()
-        source.inject(path, TagValue(content, IntVariant()))
-        result = source.fetch(path)
+    def test_fake_source_preserves_cyrillic_tags(self):
+        path = u"COM1.\u0422\u041c_5104"
+        tags = [TagPath(path)]
+        source = FakeDaSource(tags)
+        result = source.discover("")
+        discovered = result.fold(lambda e: [], lambda t: t)
         self.assertEqual(
-            result.value().value().content(),
-            content,
-            "FakeDaSource must inject value"
+            discovered[0].text(),
+            path,
+            "FakeDaSource should preserve Cyrillic tags"
         )
 
 

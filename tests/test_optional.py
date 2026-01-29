@@ -1,274 +1,163 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for Optional monad.
-
-Tests follow Elegant Objects testing principles:
-- One assertion per test
-- Test names are full English sentences
-- Random inputs where applicable
-- No setUp/tearDown idioms
-- No shared constants between tests
+Tests for Optional ADT.
 """
-import unittest
+from __future__ import print_function
+
+import logging
 import random
-import sys
-import os
+import string
+import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from opcda_to_mqtt.result.optional import Optional, Some, Empty
 
-from opcda_to_opcua.result.optional import Optional, Some, Empty
+logging.disable(logging.CRITICAL)
 
 
-class SomeReportsPresentAsTrueTest(unittest.TestCase):
-    """Some reports present as true."""
+class TestSome(unittest.TestCase):
+    """Tests for Some present case."""
 
-    def test(self):
-        content = random.randint(-1000, 1000)
-        result = Some(content)
-        self.assertTrue(
-            result.present(),
-            "Some must report present as true"
+    def test_some_fold_applies_some_function_to_content(self):
+        content = random.randint(1, 1000)
+        result = Some(content).fold(
+            lambda: "empty",
+            lambda v: v * 2
         )
-
-
-class SomeReturnsWrappedContentTest(unittest.TestCase):
-    """Some returns wrapped content."""
-
-    def test(self):
-        content = u"\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435"
-        result = Some(content)
         self.assertEqual(
-            result.content(),
-            content,
-            "Some must return wrapped content"
-        )
-
-
-class SomeReturnsIntegerContentTest(unittest.TestCase):
-    """Some returns integer content unchanged."""
-
-    def test(self):
-        content = random.randint(-999999, 999999)
-        result = Some(content)
-        self.assertEqual(
-            result.content(),
-            content,
-            "Some must return integer content unchanged"
-        )
-
-
-class SomeReturnsFloatContentTest(unittest.TestCase):
-    """Some returns float content unchanged."""
-
-    def test(self):
-        content = random.uniform(-1000.0, 1000.0)
-        result = Some(content)
-        self.assertAlmostEqual(
-            result.content(),
-            content,
-            places=10,
-            msg="Some must return float content unchanged"
-        )
-
-
-class SomeOtherwiseReturnsContentTest(unittest.TestCase):
-    """Some otherwise returns content ignoring default."""
-
-    def test(self):
-        content = random.randint(1, 100)
-        default = random.randint(101, 200)
-        result = Some(content)
-        self.assertEqual(
-            result.otherwise(default),
-            content,
-            "Some otherwise must return content ignoring default"
-        )
-
-
-class SomeMapsContentWithFunctionTest(unittest.TestCase):
-    """Some maps content with function."""
-
-    def test(self):
-        content = random.randint(1, 100)
-        result = Some(content)
-        doubled = result.map(lambda x: x * 2)
-        self.assertEqual(
-            doubled.content(),
+            result,
             content * 2,
-            "Some must map content with function"
+            "Some.fold should apply some function"
         )
 
-
-class SomeMapsToNewSomeInstanceTest(unittest.TestCase):
-    """Some map returns new Some instance."""
-
-    def test(self):
-        original = Some(random.randint(1, 100))
-        mapped = original.map(lambda x: x)
-        self.assertIsNot(
-            original,
-            mapped,
-            "Some map must return new instance"
-        )
-
-
-class SomeFlatmapsToNewOptionalTest(unittest.TestCase):
-    """Some flatmaps to new Optional."""
-
-    def test(self):
-        result = Some(random.randint(10, 100))
-        chained = result.flatmap(lambda x: Some(x + 5) if x > 5 else Empty())
+    def test_some_is_present_returns_true(self):
+        content = "".join(random.choice(string.ascii_letters) for _ in range(8))
         self.assertTrue(
-            chained.present(),
-            "Some must flatmap to new Optional"
+            Some(content).is_present(),
+            "Some.is_present should return True"
         )
 
-
-class SomeFlatmapsToEmptyOnConditionTest(unittest.TestCase):
-    """Some flatmaps to Empty when condition fails."""
-
-    def test(self):
-        result = Some(random.randint(-10, 0))
-        chained = result.flatmap(lambda x: Some(x) if x > 50 else Empty())
-        self.assertFalse(
-            chained.present(),
-            "Some must flatmap to Empty when condition fails"
-        )
-
-
-class SomeHandlesListContentTest(unittest.TestCase):
-    """Some handles list content."""
-
-    def test(self):
-        content = [random.randint(1, 100) for _ in range(5)]
-        result = Some(content)
+    def test_some_map_transforms_content(self):
+        content = random.randint(1, 100)
+        result = Some(content).map(lambda x: x + 10)
         self.assertEqual(
-            result.content(),
-            content,
-            "Some must handle list content"
+            result.fold(lambda: 0, lambda v: v),
+            content + 10,
+            "Some.map should transform content"
         )
 
-
-class SomeHandlesDictContentTest(unittest.TestCase):
-    """Some handles dict content."""
-
-    def test(self):
-        content = {"key_%d" % i: random.randint(1, 100) for i in range(3)}
-        result = Some(content)
+    def test_some_flatmap_returns_function_result(self):
+        content = random.randint(1, 50)
+        result = Some(content).flatmap(lambda x: Some(x * 3))
         self.assertEqual(
-            result.content(),
+            result.fold(lambda: 0, lambda v: v),
+            content * 3,
+            "Some.flatmap should return function result"
+        )
+
+    def test_some_otherwise_returns_content(self):
+        content = random.randint(1, 100)
+        default = random.randint(200, 300)
+        self.assertEqual(
+            Some(content).otherwise(default),
             content,
-            "Some must handle dict content"
+            "Some.otherwise should return content"
+        )
+
+    def test_some_content_returns_wrapped_value(self):
+        content = "".join(random.choice(string.ascii_letters) for _ in range(10))
+        self.assertEqual(
+            Some(content).content(),
+            content,
+            "Some.content should return wrapped value"
+        )
+
+    def test_some_equals_another_some_with_same_content(self):
+        content = random.randint(1, 1000)
+        self.assertEqual(
+            Some(content),
+            Some(content),
+            "Somes with same content should be equal"
+        )
+
+    def test_some_not_equals_some_with_different_content(self):
+        self.assertNotEqual(
+            Some(random.randint(1, 100)),
+            Some(random.randint(200, 300)),
+            "Somes with different content should not be equal"
+        )
+
+    def test_some_not_equals_empty(self):
+        content = random.randint(1, 100)
+        self.assertNotEqual(
+            Some(content),
+            Empty(),
+            "Some should not equal Empty"
+        )
+
+    def test_some_repr_shows_content(self):
+        content = random.randint(1, 100)
+        self.assertIn(
+            str(content),
+            repr(Some(content)),
+            "Some repr should show content"
         )
 
 
-class EmptyReportsPresentAsFalseTest(unittest.TestCase):
-    """Empty reports present as false."""
+class TestEmpty(unittest.TestCase):
+    """Tests for Empty absent case."""
 
-    def test(self):
-        result = Empty()
+    def test_empty_fold_applies_empty_function(self):
+        marker = "".join(random.choice(string.ascii_letters) for _ in range(8))
+        result = Empty().fold(
+            lambda: marker,
+            lambda v: "present"
+        )
+        self.assertEqual(
+            result,
+            marker,
+            "Empty.fold should apply empty function"
+        )
+
+    def test_empty_is_present_returns_false(self):
         self.assertFalse(
-            result.present(),
-            "Empty must report present as false"
+            Empty().is_present(),
+            "Empty.is_present should return False"
         )
 
+    def test_empty_map_returns_empty(self):
+        result = Empty().map(lambda x: x * 2)
+        self.assertFalse(
+            result.is_present(),
+            "Empty.map should return Empty"
+        )
 
-class EmptyRaisesOnContentExtractionTest(unittest.TestCase):
-    """Empty raises RuntimeError on content extraction."""
+    def test_empty_flatmap_returns_empty(self):
+        result = Empty().flatmap(lambda x: Some(x * 2))
+        self.assertFalse(
+            result.is_present(),
+            "Empty.flatmap should return Empty"
+        )
 
-    def test(self):
-        result = Empty()
-        with self.assertRaises(RuntimeError):
-            result.content()
-
-
-class EmptyOtherwiseReturnsDefaultTest(unittest.TestCase):
-    """Empty otherwise returns default."""
-
-    def test(self):
+    def test_empty_otherwise_returns_default(self):
         default = random.randint(1, 100)
-        result = Empty()
         self.assertEqual(
-            result.otherwise(default),
+            Empty().otherwise(default),
             default,
-            "Empty otherwise must return default"
+            "Empty.otherwise should return default"
         )
 
-
-class EmptyOtherwiseReturnsUnicodeDefaultTest(unittest.TestCase):
-    """Empty otherwise returns unicode default."""
-
-    def test(self):
-        default = u"\u041f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e"
-        result = Empty()
+    def test_empty_equals_another_empty(self):
         self.assertEqual(
-            result.otherwise(default),
-            default,
-            "Empty otherwise must return unicode default"
+            Empty(),
+            Empty(),
+            "Empties should be equal"
         )
 
-
-class EmptyMapReturnsSelfTest(unittest.TestCase):
-    """Empty map returns self unchanged."""
-
-    def test(self):
-        result = Empty()
-        mapped = result.map(lambda x: x * 2)
-        self.assertIs(
-            mapped,
-            result,
-            "Empty map must return self unchanged"
-        )
-
-
-class EmptyFlatmapReturnsSelfTest(unittest.TestCase):
-    """Empty flatmap returns self unchanged."""
-
-    def test(self):
-        result = Empty()
-        chained = result.flatmap(lambda x: Some(x * 2))
-        self.assertIs(
-            chained,
-            result,
-            "Empty flatmap must return self unchanged"
-        )
-
-
-class EmptyRemainsPresentFalseAfterMapTest(unittest.TestCase):
-    """Empty remains present false after map."""
-
-    def test(self):
-        result = Empty()
-        mapped = result.map(lambda x: x * 2)
-        self.assertFalse(
-            mapped.present(),
-            "Empty must remain present false after map"
-        )
-
-
-class EmptyOtherwiseReturnsListDefaultTest(unittest.TestCase):
-    """Empty otherwise returns list default."""
-
-    def test(self):
-        default = [random.randint(1, 10) for _ in range(3)]
-        result = Empty()
+    def test_empty_repr_shows_empty(self):
         self.assertEqual(
-            result.otherwise(default),
-            default,
-            "Empty otherwise must return list default"
-        )
-
-
-class MultipleEmptyInstancesAreIndependentTest(unittest.TestCase):
-    """Multiple Empty instances are independent."""
-
-    def test(self):
-        empty1 = Empty()
-        empty2 = Empty()
-        self.assertIsNot(
-            empty1,
-            empty2,
-            "Multiple Empty instances must be independent"
+            repr(Empty()),
+            "Empty()",
+            "Empty repr should show Empty()"
         )
 
 

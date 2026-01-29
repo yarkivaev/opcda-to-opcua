@@ -1,0 +1,11 @@
+{
+    "da-progid": "OPCDataStore.TOPCElemerServer.2",
+    "da-host": "localhost",
+    "mqtt-host": "192.168.1.100",
+    "mqtt-port": 1883,
+    "mqtt-topic": "factory/line1",
+    "prefix": "COM1",
+    "tags": [],
+    "interval": 500,
+    "workers": 50
+}
