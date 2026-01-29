@@ -52,10 +52,7 @@ class OpenOpcSource(DaSource):
             client = OpenOPC.client()
             client.connect(self._progid, self._host)
             try:
-                if prefix:
-                    items = client.list(prefix, flat=True)
-                else:
-                    items = client.list(flat=True)
+                items = self._flatten(client, prefix)
                 tags = [TagPath(item) for item in items if item]
                 return Right(tags)
             finally:
@@ -65,6 +62,30 @@ class OpenOpcSource(DaSource):
                 "Discovery failed",
                 {"progid": self._progid, "host": self._host, "error": str(e)}
             ))
+
+    def _flatten(self, client, prefix):
+        """
+        Recursively flatten tag hierarchy.
+
+        Args:
+            client: OpenOPC client
+            prefix: Current path prefix
+
+        Returns:
+            List of tag path strings
+        """
+        result = []
+        if prefix:
+            children = client.list(prefix)
+        else:
+            children = client.list()
+        for child in children:
+            subchildren = client.list(child)
+            if subchildren:
+                result.extend(self._flatten(client, child))
+            else:
+                result.append(child)
+        return result
 
     def __repr__(self):
         """
