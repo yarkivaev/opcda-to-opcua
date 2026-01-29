@@ -212,6 +212,36 @@ class TestMergedConfig(unittest.TestCase):
             "tags should come from file"
         )
 
+    def test_merged_config_exclude_default(self):
+        cfg = MergedConfig({}, argparse.Namespace(exclude=None))
+        self.assertEqual(
+            cfg.exclude(),
+            [],
+            "exclude default should be empty list"
+        )
+
+    def test_merged_config_exclude_from_file(self):
+        patterns = ["*.Device exchange", "*.Status"]
+        file = {"exclude": patterns}
+        cli = argparse.Namespace(exclude=None)
+        cfg = MergedConfig(file, cli)
+        self.assertEqual(
+            cfg.exclude(),
+            patterns,
+            "exclude should come from file"
+        )
+
+    def test_merged_config_exclude_from_cli(self):
+        patterns = ["*.Test", "*.Debug"]
+        file = {"exclude": ["*.Other"]}
+        cli = argparse.Namespace(exclude=patterns)
+        cfg = MergedConfig(file, cli)
+        self.assertEqual(
+            cfg.exclude(),
+            patterns,
+            "exclude should prefer CLI over file"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

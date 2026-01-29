@@ -13,6 +13,7 @@ Example:
 """
 from __future__ import print_function
 
+import fnmatch
 import signal
 import sys
 
@@ -24,6 +25,23 @@ from opcda_to_mqtt.domain.interval import Milliseconds
 from opcda_to_mqtt.sync.queue import TaskQueue
 from opcda_to_mqtt.sync.timer import TimerThread
 from opcda_to_mqtt.sync.bridge import Bridge
+
+
+def _matches(text, patterns):
+    """
+    Check if text matches any pattern.
+
+    Args:
+        text: String to check
+        patterns: List of glob patterns
+
+    Returns:
+        True if text matches any pattern
+    """
+    for pattern in patterns:
+        if fnmatch.fnmatch(text, pattern):
+            return True
+    return False
 
 
 def main():
@@ -72,6 +90,11 @@ def main():
             ))
             sys.exit(1)
         tags = result.fold(lambda _: [], lambda t: t)
+    excludes = cfg.exclude()
+    if excludes:
+        before = len(tags)
+        tags = [t for t in tags if not _matches(t.text(), excludes)]
+        logger.info("Excluded %d tags by pattern" % (before - len(tags)))
     if not tags:
         logger.error("No tags to monitor")
         sys.exit(1)

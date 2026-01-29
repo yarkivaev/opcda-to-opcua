@@ -200,3 +200,12 @@ class MergedConfig:
             Worker count integer
         """
         return self.get("workers", 50)
+
+    def exclude(self):
+        """
+        Get tag exclusion patterns.
+
+        Returns:
+            List of glob patterns to exclude
+        """
+        return self.get("exclude", [])
