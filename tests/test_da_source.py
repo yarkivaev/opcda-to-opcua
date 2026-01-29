@@ -235,6 +235,36 @@ class TestOpenOpcSourceFlatten(unittest.TestCase):
             "Should preserve Cyrillic paths"
         )
 
+    def test_flatten_handles_full_paths_from_server(self):
+        from opcda_to_mqtt.da.openopc import OpenOpcSource
+        source = OpenOpcSource("progid", "host")
+        client = StubOpcClient({
+            "COM1": ["COM1.Tag1", "COM1.Tag2"],
+            "COM1.Tag1": [],
+            "COM1.Tag2": []
+        })
+        result = source._flatten(client, "COM1")
+        self.assertEqual(
+            sorted(result),
+            ["COM1.Tag1", "COM1.Tag2"],
+            "Should handle full paths returned by server"
+        )
+
+    def test_flatten_handles_full_paths_with_branches(self):
+        from opcda_to_mqtt.da.openopc import OpenOpcSource
+        source = OpenOpcSource("progid", "host")
+        client = StubOpcClient({
+            "COM1": ["COM1.Device"],
+            "COM1.Device": ["COM1.Device.Tag"],
+            "COM1.Device.Tag": []
+        })
+        result = source._flatten(client, "COM1")
+        self.assertEqual(
+            result,
+            ["COM1.Device.Tag"],
+            "Should handle full paths with branches"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
