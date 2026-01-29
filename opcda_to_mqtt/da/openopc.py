@@ -80,11 +80,15 @@ class OpenOpcSource(DaSource):
         else:
             children = client.list()
         for child in children:
-            subchildren = client.list(child)
-            if subchildren:
-                result.extend(self._flatten(client, child))
+            if prefix:
+                full = "%s.%s" % (prefix, child)
             else:
-                result.append(child)
+                full = child
+            subchildren = client.list(full)
+            if subchildren:
+                result.extend(self._flatten(client, full))
+            else:
+                result.append(full)
         return result
 
     def __repr__(self):

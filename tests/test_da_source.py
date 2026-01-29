@@ -107,19 +107,19 @@ class StubOpcClient:
         Create stub with hierarchy dict.
 
         Args:
-            hierarchy: Dict mapping prefix to list of children
+            hierarchy: Dict mapping prefix to list of relative children
         """
         self._hierarchy = hierarchy
 
     def list(self, prefix=None):
         """
-        Return children for prefix.
+        Return relative children for prefix.
 
         Args:
             prefix: Path prefix
 
         Returns:
-            List of children
+            List of relative child names
         """
         if prefix is None:
             return self._hierarchy.get("", [])
@@ -133,7 +133,7 @@ class TestOpenOpcSourceFlatten(unittest.TestCase):
         from opcda_to_mqtt.da.openopc import OpenOpcSource
         source = OpenOpcSource("progid", "host")
         client = StubOpcClient({
-            "COM1": ["COM1.Tag1", "COM1.Tag2"],
+            "COM1": ["Tag1", "Tag2"],
             "COM1.Tag1": [],
             "COM1.Tag2": []
         })
@@ -141,15 +141,15 @@ class TestOpenOpcSourceFlatten(unittest.TestCase):
         self.assertEqual(
             sorted(result),
             ["COM1.Tag1", "COM1.Tag2"],
-            "Should return leaf tags"
+            "Should return full path leaf tags"
         )
 
     def test_flatten_recurses_into_branches(self):
         from opcda_to_mqtt.da.openopc import OpenOpcSource
         source = OpenOpcSource("progid", "host")
         client = StubOpcClient({
-            "COM1": ["COM1.Device1"],
-            "COM1.Device1": ["COM1.Device1.Temp", "COM1.Device1.Pressure"],
+            "COM1": ["Device1"],
+            "COM1.Device1": ["Temp", "Pressure"],
             "COM1.Device1.Temp": [],
             "COM1.Device1.Pressure": []
         })
@@ -164,9 +164,9 @@ class TestOpenOpcSourceFlatten(unittest.TestCase):
         from opcda_to_mqtt.da.openopc import OpenOpcSource
         source = OpenOpcSource("progid", "host")
         client = StubOpcClient({
-            "A": ["A.B"],
-            "A.B": ["A.B.C"],
-            "A.B.C": ["A.B.C.Tag"],
+            "A": ["B"],
+            "A.B": ["C"],
+            "A.B.C": ["Tag"],
             "A.B.C.Tag": []
         })
         result = source._flatten(client, "A")
@@ -208,9 +208,9 @@ class TestOpenOpcSourceFlatten(unittest.TestCase):
         from opcda_to_mqtt.da.openopc import OpenOpcSource
         source = OpenOpcSource("progid", "host")
         client = StubOpcClient({
-            "COM1": ["COM1.Tag1", "COM1.Device"],
+            "COM1": ["Tag1", "Device"],
             "COM1.Tag1": [],
-            "COM1.Device": ["COM1.Device.Tag2"],
+            "COM1.Device": ["Tag2"],
             "COM1.Device.Tag2": []
         })
         result = source._flatten(client, "COM1")
@@ -223,15 +223,15 @@ class TestOpenOpcSourceFlatten(unittest.TestCase):
     def test_flatten_preserves_cyrillic_paths(self):
         from opcda_to_mqtt.da.openopc import OpenOpcSource
         source = OpenOpcSource("progid", "host")
-        path = u"COM1.\u0422\u041c_5104"
+        child = u"\u0422\u041c_5104"
         client = StubOpcClient({
-            "COM1": [path],
-            path: []
+            "COM1": [child],
+            "COM1." + child: []
         })
         result = source._flatten(client, "COM1")
         self.assertEqual(
             result,
-            [path],
+            ["COM1." + child],
             "Should preserve Cyrillic paths"
         )
 
