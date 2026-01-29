@@ -1,0 +1,49 @@
+=== Debug flatten ===
+list('COM1') -> [u'\u0422\u041c 5104_\u0418\u0427\u04221[1]', u'\u0422\u041c 5104_\u0418\u0427\u04222[2]', u'\u0422\u041c 5104_\u0418\u0427\u04223[3]', u'\u0422\u041c 5104_\u0418\u0427\u04224[4]']
+  child=u'\u0422\u041c 5104_\u0418\u0427\u04221[1]', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1]'
+  subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 1', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 10', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 11', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 12', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 13']
+  list(u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1]') -> [u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 1', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 10', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 11', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 12', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 13']
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 1', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 1'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 1']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 1'
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 10', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 10'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 10']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 10'
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 11', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 11'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 11']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 11'
+  child=u'\u0422\u041c 5104_\u0418\u0427\u04222[2]', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2]'
+  subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 1', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 10', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 11', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 12', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 13']
+  list(u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2]') -> [u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 1', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 10', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 11', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 12', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 13']
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 1', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 1'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 1']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 1'
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 10', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 10'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 10']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 10'
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 11', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 11'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 11']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 11'
+  child=u'\u0422\u041c 5104_\u0418\u0427\u04223[3]', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3]'
+  subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 1', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 10', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 11', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 12', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 13']
+  list(u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3]') -> [u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 1', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 10', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 11', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 12', u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 13']
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 1', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 1'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 1']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 1'
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 10', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 10'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 10']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 10'
+    child=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 11', full=u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 11'
+    subchildren=[u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 11']
+    -> LEAF: u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 11'
+
+=== Result (first 10) ===
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 1'
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 10'
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04221[1].Channel 11'
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 1'
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 10'
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04222[2].Channel 11'
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 1'
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 10'
+u'COM1.\u0422\u041c 5104_\u0418\u0427\u04223[3].Channel 11'
