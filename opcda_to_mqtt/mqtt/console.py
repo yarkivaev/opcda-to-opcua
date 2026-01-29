@@ -13,6 +13,8 @@ Example:
 """
 from __future__ import print_function
 
+import sys
+
 from opcda_to_mqtt.mqtt.broker import (
     MqttBroker, Connected, Published, Disconnected
 )
@@ -52,6 +54,7 @@ class ConsoleBroker(MqttBroker):
             Either[Problem, Published] always Right
         """
         print("%s: %s" % (topic, message))
+        sys.stdout.flush()
         return Right(Published())
 
     def disconnect(self):
