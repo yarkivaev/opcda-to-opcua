@@ -96,6 +96,7 @@ class Bridge:
         def handle(result):
             _log.debug("Bridge.callback: received result for %s", tag.text())
             value, quality, _ = result
+            _log.info("%s = %s (%s)", tag.text(), value, quality)
             message = json.dumps({
                 "value": TagValue(value).json(),
                 "quality": OpcQuality(quality).text()
