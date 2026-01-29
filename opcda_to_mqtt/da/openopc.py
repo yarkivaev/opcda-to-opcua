@@ -79,8 +79,10 @@ class OpenOpcSource(DaSource):
             children = client.list(prefix)
         else:
             children = client.list()
+        if children == [prefix]:
+            return [prefix]
         for child in children:
-            if prefix and child.startswith(prefix + "."):
+            if prefix and (child == prefix or child.startswith(prefix + ".")):
                 full = child
             elif prefix:
                 full = "%s.%s" % (prefix, child)

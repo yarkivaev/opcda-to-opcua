@@ -280,6 +280,19 @@ class TestOpenOpcSourceFlatten(unittest.TestCase):
             "Should treat leaf returning itself as leaf"
         )
 
+    def test_flatten_handles_leaf_prefix(self):
+        from opcda_to_mqtt.da.openopc import OpenOpcSource
+        source = OpenOpcSource("progid", "host")
+        client = StubOpcClient({
+            "COM1.Device.Channel": ["COM1.Device.Channel"]
+        })
+        result = source._flatten(client, "COM1.Device.Channel")
+        self.assertEqual(
+            result,
+            ["COM1.Device.Channel"],
+            "Should return prefix when prefix is already a leaf"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
