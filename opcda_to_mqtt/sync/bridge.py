@@ -3,16 +3,14 @@
 Bridge orchestrator for OPC-DA to MQTT publishing.
 
 Example:
-    >>> bridge = Bridge(queue, workers, timer, broker, interval, topic)
-    >>> bridge.run(tags)  # Blocks until stopped
+    >>> bridge = Bridge(queue, workers, timer, broker)
+    >>> bridge.start(paths, interval, topic)  # Starts polling
+    >>> bridge.stop()  # Stops gracefully
 """
 from __future__ import print_function
 
-import json
-
-from opcda_to_mqtt.sync.task import ReadTask
-from opcda_to_mqtt.domain.value import TagValue
-from opcda_to_mqtt.domain.quality import OpcQuality
+from opcda_to_mqtt.domain.tag import Tag
+from opcda_to_mqtt.sync.schedule import Schedule
 
 
 class Bridge:
@@ -22,8 +20,8 @@ class Bridge:
     Manages workers, timer, and task flow.
 
     Example:
-        >>> bridge = Bridge(queue, workers, timer, broker, interval, topic)
-        >>> bridge.start([TagPath("Tag1"), TagPath("Tag2")])
+        >>> bridge = Bridge(queue, workers, timer, broker)
+        >>> bridge.start([TagPath("Tag1"), TagPath("Tag2")], interval, topic)
         >>> # Tags are continuously read and published
         >>> bridge.stop()
     """
@@ -43,56 +41,23 @@ class Bridge:
         self._timer = timer
         self._broker = broker
 
-    def start(self, tags, interval, topic):
+    def start(self, paths, interval, topic):
         """
-        Start the bridge with given tags.
+        Start the bridge with given tag paths.
 
         Args:
-            tags: List of TagPath to monitor
+            paths: List of TagPath to monitor
             interval: Milliseconds between reads
             topic: Base MQTT topic prefix
         """
-        self._interval = interval
-        self._topic = topic
+        schedule = Schedule(self._timer, interval, self._queue)
         self._broker.connect()
         self._timer.start()
         for worker in self._workers:
             worker.start()
-        for tag in tags:
-            self._enqueue(tag)
-
-    def _enqueue(self, tag):
-        """
-        Create and enqueue a read task for tag.
-
-        Args:
-            tag: TagPath to read
-        """
-        callback = self._callback(tag)
-        task = ReadTask(tag, callback)
-        self._queue.put(task)
-
-    def _callback(self, tag):
-        """
-        Create callback for tag read completion.
-
-        Args:
-            tag: TagPath being read
-
-        Returns:
-            Function to handle read result
-        """
-        def handle(result):
-            value, quality, _ = result
-            message = json.dumps({
-                "value": TagValue(value).json(),
-                "quality": OpcQuality(quality).text()
-            })
-            mqtt = tag.topic(self._topic)
-            self._broker.publish(mqtt, message)
-            delay = self._interval.seconds()
-            self._timer.schedule(delay, lambda: self._enqueue(tag))
-        return handle
+        for path in paths:
+            tag = Tag(path, self._broker, topic, schedule)
+            self._queue.put(tag)
 
     def stop(self):
         """

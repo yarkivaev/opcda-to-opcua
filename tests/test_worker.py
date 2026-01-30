@@ -10,10 +10,14 @@ import string
 import time
 import unittest
 
-from opcda_to_mqtt.sync.worker import FakeWorker
+from opcda_to_mqtt.sync.worker import FakeWorker, FakeOpcClient
 from opcda_to_mqtt.sync.queue import TaskQueue
-from opcda_to_mqtt.sync.task import ReadTask
+from opcda_to_mqtt.sync.timer import TimerThread
+from opcda_to_mqtt.sync.schedule import Schedule
+from opcda_to_mqtt.domain.tag import Tag
 from opcda_to_mqtt.domain.path import TagPath
+from opcda_to_mqtt.domain.interval import Milliseconds
+from opcda_to_mqtt.mqtt.fake import FakeMqttBroker
 
 logging.disable(logging.CRITICAL)
 
@@ -30,35 +34,47 @@ class TestFakeWorker(unittest.TestCase):
             "FakeWorker should start with no executed"
         )
 
-    def test_worker_executes_task_from_queue(self):
+    def test_worker_executes_tag_from_queue(self):
         queue = TaskQueue()
-        results = []
-        path = "".join(random.choice(string.ascii_letters) for _ in range(8))
+        timer = TimerThread()
+        schedule = Schedule(timer, Milliseconds(100), queue)
+        broker = FakeMqttBroker()
+        name = "".join(random.choice(string.ascii_letters) for _ in range(8))
         value = random.randint(1, 100)
-        worker = FakeWorker(queue, {path: value})
+        worker = FakeWorker(queue, {name: value})
+        broker.connect()
+        timer.start()
         worker.start()
-        task = ReadTask(TagPath(path), lambda r: results.append(r))
-        queue.put(task)
+        tag = Tag(TagPath(name), broker, "t", schedule)
+        queue.put(tag)
         queue.put(None)
         worker.join()
-        self.assertEqual(
-            len(results),
+        timer.stop()
+        messages = broker.messages()
+        self.assertGreaterEqual(
+            len(messages),
             1,
-            "FakeWorker should execute task from queue"
+            "FakeWorker should execute tag from queue"
         )
 
-    def test_worker_records_executed_tasks(self):
+    def test_worker_records_executed_tags(self):
         queue = TaskQueue()
-        worker = FakeWorker(queue, {})
+        timer = TimerThread()
+        schedule = Schedule(timer, Milliseconds(100), queue)
+        broker = FakeMqttBroker()
+        worker = FakeWorker(queue, {"Tag": 1})
+        broker.connect()
+        timer.start()
         worker.start()
-        task = ReadTask(TagPath("Tag"), lambda r: r)
-        queue.put(task)
+        tag = Tag(TagPath("Tag"), broker, "t", schedule)
+        queue.put(tag)
         queue.put(None)
         worker.join()
+        timer.stop()
         self.assertEqual(
             len(worker.executed()),
             1,
-            "FakeWorker should record executed tasks"
+            "FakeWorker should record executed tags"
         )
 
     def test_worker_stops_on_sentinel(self):
@@ -68,63 +84,89 @@ class TestFakeWorker(unittest.TestCase):
         queue.put(None)
         worker.join()
 
-    def test_worker_executes_multiple_tasks(self):
+    def test_worker_executes_multiple_tags(self):
         queue = TaskQueue()
-        count = random.randint(3, 10)
-        worker = FakeWorker(queue, {})
+        timer = TimerThread()
+        schedule = Schedule(timer, Milliseconds(100), queue)
+        broker = FakeMqttBroker()
+        count = random.randint(3, 7)
+        readings = {"Tag%d" % i: i for i in range(count)}
+        worker = FakeWorker(queue, readings)
+        broker.connect()
+        timer.start()
         worker.start()
         for i in range(count):
-            task = ReadTask(TagPath("Tag%d" % i), lambda r: r)
-            queue.put(task)
+            tag = Tag(TagPath("Tag%d" % i), broker, "t", schedule)
+            queue.put(tag)
         queue.put(None)
         worker.join()
+        timer.stop()
         self.assertEqual(
             len(worker.executed()),
             count,
-            "FakeWorker should execute multiple tasks"
+            "FakeWorker should execute multiple tags"
         )
 
     def test_worker_uses_configured_readings(self):
         queue = TaskQueue()
-        path = "Device.Sensor"
+        timer = TimerThread()
+        schedule = Schedule(timer, Milliseconds(100), queue)
+        broker = FakeMqttBroker()
+        name = "Device.Sensor"
         value = random.randint(1, 1000)
-        results = []
-        worker = FakeWorker(queue, {path: value})
+        worker = FakeWorker(queue, {name: value})
+        broker.connect()
+        timer.start()
         worker.start()
-        task = ReadTask(TagPath(path), lambda r: results.append(r[0]))
-        queue.put(task)
+        tag = Tag(TagPath(name), broker, "t", schedule)
+        queue.put(tag)
         queue.put(None)
         worker.join()
-        self.assertEqual(
-            results[0],
-            value,
+        timer.stop()
+        messages = broker.messages()
+        self.assertIn(
+            str(value),
+            messages[0][1],
             "FakeWorker should use configured readings"
         )
 
     def test_worker_handles_cyrillic_path(self):
         queue = TaskQueue()
-        path = u"COM1.\u0422\u041c_5104"
+        timer = TimerThread()
+        schedule = Schedule(timer, Milliseconds(100), queue)
+        broker = FakeMqttBroker()
+        name = u"COM1.\u0422\u041c_5104"
         value = random.randint(1, 100)
-        results = []
-        worker = FakeWorker(queue, {path: value})
+        worker = FakeWorker(queue, {name: value})
+        broker.connect()
+        timer.start()
         worker.start()
-        task = ReadTask(TagPath(path), lambda r: results.append(r))
-        queue.put(task)
+        tag = Tag(TagPath(name), broker, "t", schedule)
+        queue.put(tag)
         queue.put(None)
         worker.join()
-        self.assertEqual(
-            len(results),
+        timer.stop()
+        messages = broker.messages()
+        self.assertGreaterEqual(
+            len(messages),
             1,
             "FakeWorker should handle Cyrillic path"
         )
 
     def test_worker_executed_returns_copy(self):
         queue = TaskQueue()
-        worker = FakeWorker(queue, {})
+        timer = TimerThread()
+        schedule = Schedule(timer, Milliseconds(100), queue)
+        broker = FakeMqttBroker()
+        worker = FakeWorker(queue, {"Tag": 1})
+        broker.connect()
+        timer.start()
         worker.start()
-        queue.put(ReadTask(TagPath("Tag"), lambda r: r))
+        tag = Tag(TagPath("Tag"), broker, "t", schedule)
+        queue.put(tag)
         queue.put(None)
         worker.join()
+        timer.stop()
         executed = worker.executed()
         executed.append("extra")
         self.assertEqual(
@@ -132,6 +174,48 @@ class TestFakeWorker(unittest.TestCase):
             1,
             "FakeWorker.executed should return a copy"
         )
+
+
+class TestFakeOpcClient(unittest.TestCase):
+    """Tests for FakeOpcClient."""
+
+    def test_fake_client_read_returns_configured_value(self):
+        path = "".join(random.choice(string.ascii_letters) for _ in range(8))
+        value = random.randint(1, 1000)
+        client = FakeOpcClient({path: value})
+        result = client.read(path, sync=True)
+        self.assertEqual(
+            result[0],
+            value,
+            "FakeOpcClient.read should return configured value"
+        )
+
+    def test_fake_client_read_returns_good_quality(self):
+        client = FakeOpcClient({"tag": 1})
+        result = client.read("tag", sync=True)
+        self.assertEqual(
+            result[1],
+            "Good",
+            "FakeOpcClient.read should return Good quality"
+        )
+
+    def test_fake_client_read_returns_default_for_unknown(self):
+        client = FakeOpcClient({})
+        path = "".join(random.choice(string.ascii_letters) for _ in range(10))
+        result = client.read(path, sync=True)
+        self.assertEqual(
+            result[0],
+            0,
+            "FakeOpcClient.read should return 0 for unknown tag"
+        )
+
+    def test_fake_client_connect_does_not_raise(self):
+        client = FakeOpcClient({})
+        client.connect("ProgID")
+
+    def test_fake_client_close_does_not_raise(self):
+        client = FakeOpcClient({})
+        client.close()
 
 
 if __name__ == "__main__":

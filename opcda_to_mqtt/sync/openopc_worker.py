@@ -5,7 +5,7 @@ OpenOpcWorker for real OPC-DA tag reading.
 Example:
     >>> worker = OpenOpcWorker(queue, "OPC.Server.1", "localhost")
     >>> worker.start()
-    >>> queue.put(task)
+    >>> queue.put(tag)
     >>> queue.put(None)
     >>> worker.join()
 """
@@ -65,21 +65,22 @@ class OpenOpcWorker(Worker):
         """
         Main worker loop.
 
-        Connects to OPC, executes tasks until sentinel.
+        Connects to OPC, executes tags until sentinel.
         """
         import OpenOPC
         client = OpenOPC.client()
         client.connect(self._progid, self._host)
         while True:
             try:
-                task = self._queue.get()
-                if task is None:
+                tag = self._queue.get()
+                if tag is None:
                     break
-                task.execute(client)
-            finally:
+                tag.reading(client).publish()
+            except Exception:
                 client.close()
                 client = OpenOPC.client()
                 client.connect(self._progid, self._host)
+        client.close()
 
     def __repr__(self):
         """

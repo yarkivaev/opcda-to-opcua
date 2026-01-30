@@ -197,6 +197,23 @@ class TestBridge(unittest.TestCase):
             "Bridge repr should show worker count"
         )
 
+    def test_bridge_reuses_tag_across_cycles(self):
+        queue = TaskQueue()
+        timer = TimerThread()
+        broker = FakeMqttBroker()
+        worker = FakeWorker(queue, {"Tag": 1})
+        bridge = Bridge(queue, [worker], timer, broker)
+        bridge.start([TagPath("Tag")], Milliseconds(5), "t")
+        time.sleep(0.05)
+        bridge.stop()
+        executed = worker.executed()
+        unique = len(set(id(tag) for tag in executed))
+        self.assertEqual(
+            unique,
+            1,
+            "Bridge should reuse same tag across cycles"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

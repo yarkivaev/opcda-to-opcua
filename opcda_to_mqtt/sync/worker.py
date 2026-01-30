@@ -3,9 +3,9 @@
 Worker interface and FakeWorker implementation.
 
 Example:
-    >>> worker = FakeWorker(queue, results)
+    >>> worker = FakeWorker(queue, readings)
     >>> worker.start()
-    >>> queue.put(task)
+    >>> queue.put(tag)
     >>> queue.put(None)  # Sentinel
     >>> worker.join()
 """
@@ -60,14 +60,14 @@ class FakeWorker(Worker):
     """
     Test double for Worker.
 
-    Executes tasks with a fake client.
-    Records all executed tasks.
+    Executes tags with a fake client.
+    Records all executed tags.
 
     Example:
         >>> queue = TaskQueue()
         >>> worker = FakeWorker(queue, {"Tag1": 42})
         >>> worker.start()
-        >>> queue.put(ReadTask(TagPath("Tag1"), callback))
+        >>> queue.put(tag)
         >>> queue.put(None)
         >>> worker.join()
     """
@@ -108,15 +108,15 @@ class FakeWorker(Worker):
         """
         Main worker loop.
 
-        Pulls and executes tasks until sentinel.
+        Pulls and executes tags until sentinel.
         """
         while True:
-            task = self._queue.get()
-            if task is None:
+            tag = self._queue.get()
+            if tag is None:
                 break
             with self._lock:
-                self._executed.append(task)
-            task.execute(self._client)
+                self._executed.append(tag)
+            tag.reading(self._client).publish()
 
     def executed(self):
         """

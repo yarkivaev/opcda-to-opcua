@@ -7,6 +7,7 @@ Example:
     >>> queue.put(task)
     >>> task = queue.get()
 """
+from __future__ import absolute_import
 from __future__ import print_function
 
 import Queue as queue_module
