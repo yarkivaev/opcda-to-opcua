@@ -79,6 +79,7 @@ class OpenOpcWorker(Worker):
             finally:
                 client.close()
                 client = OpenOPC.client()
+                client.connect(self._progid, self._host)
 
     def __repr__(self):
         """
