@@ -218,3 +218,12 @@ class MergedConfig:
             True if dry-run mode is enabled
         """
         return self.get("dry_run", False)
+
+    def max_memory(self):
+        """
+        Get max memory limit in MB.
+
+        Returns:
+            Memory limit or 0 if disabled
+        """
+        return self.get("max_memory", 0)

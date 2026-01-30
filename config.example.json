@@ -9,5 +9,6 @@
     "interval": 500,
     "workers": 50,
     "exclude": ["*.Device exchange"],
-    "dry-run": false
+    "dry-run": false,
+    "max-memory": 100
 }

@@ -27,6 +27,23 @@ from opcda_to_mqtt.sync.timer import TimerThread
 from opcda_to_mqtt.sync.bridge import Bridge
 
 
+def _memory():
+    """
+    Get current process memory in MB.
+
+    Returns:
+        Memory in MB or 0 if unavailable
+    """
+    try:
+        import win32api
+        import win32process
+        handle = win32api.GetCurrentProcess()
+        info = win32process.GetProcessMemoryInfo(handle)
+        return info["WorkingSetSize"] / (1024 * 1024)
+    except ImportError:
+        return 0
+
+
 def _matches(text, patterns):
     """
     Check if text matches any pattern.
@@ -110,7 +127,9 @@ def main():
         logger.info("  - %s" % tag.text())
     interval = Milliseconds(cfg.interval())
     topic = cfg.mqtt_topic()
+    limit = cfg.max_memory()
     running = [True]
+    restart = [False]
 
     def handler(sig, frame):
         logger.info("Shutting down")
@@ -119,15 +138,19 @@ def main():
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
     bridge.start(tags, interval, topic)
-    try:
-        while running[0]:
-            signal.pause()
-    except AttributeError:
-        import time
-        while running[0]:
-            time.sleep(1)
+    import time
+    while running[0]:
+        time.sleep(1)
+        if limit > 0:
+            mem = _memory()
+            if mem > limit:
+                logger.info("Memory limit %d MB exceeded (%d MB), restarting" % (limit, int(mem)))
+                restart[0] = True
+                break
     bridge.stop()
     logger.info("Bridge stopped")
+    if restart[0]:
+        sys.exit(3)
 
 
 if __name__ == "__main__":

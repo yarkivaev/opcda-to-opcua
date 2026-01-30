@@ -98,6 +98,18 @@ class ArgumentParser:
             default=False,
             help="Print to stdout instead of MQTT"
         )
+        self._parser.add_argument(
+            "--max-memory",
+            type=int,
+            default=None,
+            help="Max memory in MB before restart (0 = disabled)"
+        )
+        self._parser.add_argument(
+            "--exclude",
+            nargs="*",
+            default=None,
+            help="Tag patterns to exclude"
+        )
 
     def parse(self, argv):
         """
