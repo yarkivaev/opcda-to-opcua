@@ -1,0 +1,39 @@
+penOPC Memory Leak Diagnostic
+============================================================
+Server: OPCDataStore.TOPCElemerServer.2 @ localhost
+Tag: COM1.▒▒ 5104_▒▒▒1[1].Channel 6
+============================================================
+
+TEST 1: 1000 reads without cleanup
+------------------------------------------------------------
+Memory before: 11.00 MB
+Memory after:  12.00 MB
+Growth:        1.00 MB
+
+TEST 2: 1000 reads with gc.collect() every 100
+------------------------------------------------------------
+Memory before: 12.00 MB
+Memory after:  13.00 MB
+Growth:        1.00 MB
+
+TEST 3: 1000 reads with client recreation every 100
+------------------------------------------------------------
+Memory before: 13.00 MB
+Memory after:  14.00 MB
+Growth:        1.00 MB
+
+TEST 4: 5000 reads without cleanup (stress test)
+------------------------------------------------------------
+Memory before: 14.00 MB
+After 1000 reads: 15.00 MB (+1.00)
+After 2000 reads: 16.00 MB (+2.00)
+After 3000 reads: 17.00 MB (+3.00)
+After 4000 reads: 18.00 MB (+4.00)
+After 5000 reads: 19.00 MB (+5.00)
+
+============================================================
+CONCLUSION:
+If TEST 3 shows less growth than TEST 1/2, client recreation helps.
+If TEST 4 shows linear growth, OpenOPC is leaking COM objects.
+============================================================
+Win32 exception occurred releasing IUnknown at 0x00fc486c
