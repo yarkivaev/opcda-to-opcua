@@ -60,6 +60,7 @@ class TimerThread:
         """
         with self._condition:
             self._running = False
+            self._heap = []
             self._condition.notify()
         self._thread.join()
 

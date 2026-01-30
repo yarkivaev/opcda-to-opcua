@@ -20,53 +20,62 @@ logging.disable(logging.CRITICAL)
 class TestSchedule(unittest.TestCase):
     """Tests for Schedule."""
 
-    def test_schedule_enqueues_tag_after_interval(self):
+    def test_schedule_fires_callback_after_interval(self):
         timer = TimerThread()
         queue = TaskQueue()
         interval = Milliseconds(random.randint(10, 30))
         schedule = Schedule(timer, interval, queue)
-        marker = object()
+        results = []
         timer.start()
-        schedule.later(marker)
+        schedule.later(lambda: results.append(1))
         time.sleep(0.1)
         timer.stop()
         self.assertEqual(
-            queue.size(),
+            len(results),
             1,
-            "Schedule should enqueue tag after interval"
+            "Schedule should fire callback after interval"
         )
 
-    def test_schedule_preserves_tag_identity(self):
+    def test_schedule_enqueue_puts_tag_in_queue(self):
         timer = TimerThread()
         queue = TaskQueue()
-        schedule = Schedule(timer, Milliseconds(random.randint(5, 15)), queue)
+        schedule = Schedule(timer, Milliseconds(100), queue)
         marker = object()
-        timer.start()
-        schedule.later(marker)
-        time.sleep(0.1)
-        timer.stop()
+        schedule.enqueue(marker)
+        self.assertEqual(
+            queue.size(),
+            1,
+            "Schedule enqueue should put tag in queue"
+        )
+
+    def test_schedule_enqueue_preserves_identity(self):
+        timer = TimerThread()
+        queue = TaskQueue()
+        schedule = Schedule(timer, Milliseconds(100), queue)
+        marker = object()
+        schedule.enqueue(marker)
         result = queue.get()
         self.assertIs(
             result,
             marker,
-            "Schedule should preserve tag identity"
+            "Schedule enqueue should preserve tag identity"
         )
 
     def test_schedule_uses_configured_interval(self):
         timer = TimerThread()
         queue = TaskQueue()
         schedule = Schedule(timer, Milliseconds(100), queue)
-        marker = object()
+        results = []
         timer.start()
-        schedule.later(marker)
+        schedule.later(lambda: results.append(1))
         time.sleep(0.02)
-        early = queue.size()
+        early = len(results)
         time.sleep(0.15)
         timer.stop()
         self.assertEqual(
             early,
             0,
-            "Schedule should wait for interval before enqueueing"
+            "Schedule should wait for interval before firing"
         )
 
     def test_schedule_repr_shows_interval(self):
@@ -80,21 +89,21 @@ class TestSchedule(unittest.TestCase):
             "Schedule repr should show interval"
         )
 
-    def test_schedule_handles_multiple_tags(self):
+    def test_schedule_handles_multiple_callbacks(self):
         timer = TimerThread()
         queue = TaskQueue()
         schedule = Schedule(timer, Milliseconds(random.randint(5, 15)), queue)
         count = random.randint(3, 7)
-        markers = [object() for _ in range(count)]
+        results = []
         timer.start()
-        for marker in markers:
-            schedule.later(marker)
+        for i in range(count):
+            schedule.later(lambda i=i: results.append(i))
         time.sleep(0.1)
         timer.stop()
         self.assertEqual(
-            queue.size(),
+            len(results),
             count,
-            "Schedule should handle multiple tags"
+            "Schedule should handle multiple callbacks"
         )
 
 

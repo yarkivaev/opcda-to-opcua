@@ -40,6 +40,7 @@ class Tag(object):
         self._broker = broker
         self._topic = topic
         self._schedule = schedule
+        self._enqueue = lambda: schedule.enqueue(self)
 
     def path(self):
         """
@@ -75,7 +76,7 @@ class Tag(object):
         """
         Schedule this tag for re-enqueueing.
         """
-        self._schedule.later(self)
+        self._schedule.later(self._enqueue)
 
     def __repr__(self):
         """

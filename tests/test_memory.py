@@ -92,6 +92,28 @@ class TestMemoryLeaks(unittest.TestCase):
             "Tag count should match path count not cycle count"
         )
 
+    def test_lambda_count_stable_over_many_cycles(self):
+        gc.collect()
+        before = len([o for o in gc.get_objects()
+                      if type(o).__name__ == "function" and getattr(o, "__closure__", None)])
+        queue = TaskQueue()
+        timer = TimerThread()
+        broker = FakeMqttBroker()
+        worker = FakeWorker(queue, {"Tag": random.randint(1, 100)})
+        bridge = Bridge(queue, [worker], timer, broker)
+        bridge.start([TagPath("Tag")], Milliseconds(2), "t")
+        time.sleep(3.0)
+        bridge.stop()
+        gc.collect()
+        after = len([o for o in gc.get_objects()
+                     if type(o).__name__ == "function" and getattr(o, "__closure__", None)])
+        growth = after - before
+        self.assertLess(
+            growth,
+            20,
+            "Lambda count should stay bounded, grew by %d" % growth
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
