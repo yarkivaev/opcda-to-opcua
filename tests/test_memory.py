@@ -114,6 +114,29 @@ class TestMemoryLeaks(unittest.TestCase):
             "Lambda count should stay bounded, grew by %d" % growth
         )
 
+    def test_bound_method_count_stable_with_short_interval(self):
+        gc.collect()
+        before = len([o for o in gc.get_objects() if type(o).__name__ == "method"])
+        count = random.randint(3, 8)
+        paths = [TagPath("Tag%d" % i) for i in range(count)]
+        readings = {path.text(): random.randint(1, 100) for path in paths}
+        queue = TaskQueue()
+        timer = TimerThread()
+        broker = FakeMqttBroker()
+        worker = FakeWorker(queue, readings)
+        bridge = Bridge(queue, [worker], timer, broker)
+        bridge.start(paths, Milliseconds(1), "t")
+        time.sleep(5.0)
+        bridge.stop()
+        gc.collect()
+        after = len([o for o in gc.get_objects() if type(o).__name__ == "method"])
+        growth = after - before
+        self.assertLess(
+            growth,
+            50,
+            "Bound method count should stay bounded, grew by %d" % growth
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

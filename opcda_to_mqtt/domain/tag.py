@@ -17,8 +17,8 @@ class Tag(object):
     """
     Immutable tag that produces readings.
 
-    Holds path and publishing/scheduling dependencies.
-    Four attributes: path, broker, topic, schedule.
+    Holds path and cached callbacks for publishing and scheduling.
+    Four attributes: path, enqueue, output, later.
 
     Example:
         >>> tag = Tag(path, broker, topic, schedule)
@@ -37,10 +37,9 @@ class Tag(object):
             schedule: Schedule for re-enqueueing
         """
         self._path = path
-        self._broker = broker
-        self._topic = topic
-        self._schedule = schedule
         self._enqueue = lambda: schedule.enqueue(self)
+        self._output_bound = lambda m: broker.publish(path.topic(topic), m)
+        self._later_bound = lambda: schedule.later(self._enqueue)
 
     def path(self):
         """
@@ -61,22 +60,7 @@ class Tag(object):
         Returns:
             TagRead that can publish itself
         """
-        return TagRead(self._path, source, self._output, self._later)
-
-    def _output(self, message):
-        """
-        Publish message to MQTT.
-
-        Args:
-            message: JSON message string
-        """
-        self._broker.publish(self._path.topic(self._topic), message)
-
-    def _later(self):
-        """
-        Schedule this tag for re-enqueueing.
-        """
-        self._schedule.later(self._enqueue)
+        return TagRead(self._path, source, self._output_bound, self._later_bound)
 
     def __repr__(self):
         """
