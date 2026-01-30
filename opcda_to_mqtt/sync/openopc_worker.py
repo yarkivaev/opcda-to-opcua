@@ -11,12 +11,9 @@ Example:
 """
 from __future__ import print_function
 
-import logging
 import threading
 
 from opcda_to_mqtt.sync.worker import Worker
-
-_log = logging.getLogger("opcda_mqtt")
 
 
 class OpenOpcWorker(Worker):
@@ -79,13 +76,12 @@ class OpenOpcWorker(Worker):
                 break
             try:
                 tag.reading(client).publish()
-            except Exception as e:
-                _log.exception("Worker failed on tag %s: %s", tag.path().text(), e)
+            except Exception:
                 tag._later_bound()
                 try:
                     client.close()
-                except Exception as e2:
-                    _log.exception("Worker close failed: %s", e2)
+                except Exception:
+                    pass
                 import time
                 delay = 1
                 while True:
@@ -93,8 +89,7 @@ class OpenOpcWorker(Worker):
                         client = OpenOPC.client()
                         client.connect(self._progid, self._host)
                         break
-                    except Exception as e3:
-                        _log.exception("Worker reconnect failed, retry in %ds: %s", delay, e3)
+                    except Exception:
                         time.sleep(delay)
                         delay = min(delay * 2, 60)
         client.close()
